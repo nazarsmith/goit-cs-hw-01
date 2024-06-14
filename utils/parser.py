@@ -67,7 +67,6 @@ class Parser:
             TokenType.RPAREN,
         ):
             token = self.current_token
-            print(token.type)
             if token.type == TokenType.PLUS:
                 self.advance(TokenType.PLUS)
             elif token.type == TokenType.MINUS:
