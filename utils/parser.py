@@ -25,69 +25,44 @@ class Parser:
             self.error()
 
     def term(self):
-        """Парсер для 'term' правил граматики. У нашому випадку - це цілі числа."""
-        token = self.current_token
-        self.advance(TokenType.INTEGER)
-        return Num(token)
+        # term: множення та ділення factors
+        node = self.factor()
 
-    def factor(self, token):
-        self.advance(token.type)  # перейти до наступного токену після дужок
-        node = (
-            self.term()
-        )  # вважатимемо, що токен - це інт і використаймо його як наступний лівий символ в ноді BinOp
-        token = self.current_token
-        if token.type == TokenType.LPAREN:
-            node = self.factor(token)
-        elif token.type in (
-            TokenType.PLUS,
-            TokenType.MINUS,
-            TokenType.MUL,
-            TokenType.DIV,
-        ):
-            self.advance(token.type)
-        node = BinOp(left=node, op=token, right=self.term())
+        while self.current_token.type in (TokenType.MUL, TokenType.DIV):
+            token = self.current_token
+            if token.type == TokenType.MUL:
+                self.advance(TokenType.MUL)
+            elif token.type == TokenType.DIV:
+                self.advance(TokenType.DIV)
+            node = BinOp(left=node, op=token, right=self.factor())
+
         return node
 
-    def expr(self):
-        """Парсер для арифметичних виразів."""
-        if self.current_token.type == TokenType.LPAREN:
-            node = self.factor(
-                self.current_token
-            )  # повертає нод який буде використаний як лівий нод в BinOp
-        elif self.current_token.type == TokenType.RPAREN:
-            self.error()
+    def factor(self):
+        # factor: числа та expr в дужках
+        token = self.current_token
+        if token.type == TokenType.INTEGER:
+            self.advance(TokenType.INTEGER)
+            return Num(token)
+        elif token.type == TokenType.LPAREN:
+            self.advance(TokenType.LPAREN)
+            node = self.expr()
+            self.advance(TokenType.RPAREN)
+            return node
         else:
-            node = self.term()
-        while self.current_token.type in (
-            TokenType.PLUS,
-            TokenType.MINUS,
-            TokenType.MUL,
-            TokenType.DIV,
-            TokenType.LPAREN,
-            TokenType.RPAREN,
-        ):
+            self.error()
+
+    def expr(self):
+        # expr: додавання та віднімання terms
+        node = self.term()
+
+        while self.current_token.type in (TokenType.PLUS, TokenType.MINUS):
             token = self.current_token
             if token.type == TokenType.PLUS:
                 self.advance(TokenType.PLUS)
             elif token.type == TokenType.MINUS:
                 self.advance(TokenType.MINUS)
-            elif token.type == TokenType.MUL:
-                self.advance(TokenType.MUL)
-            elif token.type == TokenType.DIV:
-                self.advance(TokenType.DIV)
-            elif token.type == TokenType.LPAREN:
-                node = self.factor(token)
-            elif token.type == TokenType.RPAREN:
-                self.advance(token.type)
-                if self.current_token.type != TokenType.EOF:
-                    continue
-                else:
-                    return node
-            try:
-                right = self.term()
-            except:
-                right = self.factor(self.current_token)
-            node = BinOp(left=node, op=token, right=right)
+            node = BinOp(left=node, op=token, right=self.term())
 
         return node
 
